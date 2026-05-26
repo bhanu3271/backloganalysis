@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Excel Data Dashboard</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+</head>
+<body>
+
+<!-- ============ UPLOAD SCREEN ============ -->
+<section id="upload-screen" class="upload-screen">
+  <div class="upload-hero">
+    <div class="upload-logo">
+      <i class="fas fa-table-cells-large"></i>
+    </div>
+    <h1>Excel Data Dashboard</h1>
+    <p>Upload your Excel file to instantly generate filters, tables & comparisons</p>
+    <label class="upload-btn" for="file-input">
+      <i class="fas fa-cloud-upload-alt"></i> Upload Excel File (.xlsx / .xls)
+    </label>
+    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden />
+    <div id="upload-status" class="upload-status hidden"></div>
+    <div class="upload-features">
+      <div class="feat"><i class="fas fa-filter"></i><span>Auto Filters</span></div>
+      <div class="feat"><i class="fas fa-chart-bar"></i><span>Charts</span></div>
+      <div class="feat"><i class="fas fa-table"></i><span>Data Table</span></div>
+      <div class="feat"><i class="fas fa-code-compare"></i><span>Comparisons</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DASHBOARD ============ -->
+<div id="dashboard" class="dashboard hidden">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <i class="fas fa-table-cells-large"></i>
+      <span class="sidebar-title">Dashboard</span>
+      <button id="sidebar-toggle" class="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-tab="overview"><i class="fas fa-chart-pie"></i><span>Overview</span></a>
+      <a href="#" class="nav-item" data-tab="data-table"><i class="fas fa-table"></i><span>Data Table</span></a>
+      <a href="#" class="nav-item" data-tab="charts"><i class="fas fa-chart-bar"></i><span>Charts</span></a>
+      <a href="#" class="nav-item" data-tab="comparison"><i class="fas fa-code-compare"></i><span>Comparison</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="change-file-btn" class="change-file-btn"><i class="fas fa-file-upload"></i><span>Change File</span></button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h2 id="topbar-title">Overview</h2>
+        <span id="file-info-badge" class="file-badge"></span>
+      </div>
+      <div class="topbar-right">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="global-search" placeholder="Search all data…" />
+        </div>
+        <button id="export-btn" class="icon-btn" title="Export filtered data"><i class="fas fa-download"></i></button>
+        <button id="reset-filters-btn" class="icon-btn" title="Reset all filters"><i class="fas fa-rotate-left"></i></button>
+      </div>
+    </header>
+
+    <!-- Filter Panel -->
+    <section id="filter-panel" class="filter-panel">
+      <div class="filter-panel-header">
+        <i class="fas fa-filter"></i> Filters
+        <span id="filter-count-badge" class="filter-count-badge hidden">0</span>
+        <button id="toggle-filters-btn" class="toggle-filters-btn"><i class="fas fa-chevron-up"></i></button>
+      </div>
+      <div id="filter-controls" class="filter-controls"></div>
+    </section>
+
+    <!-- Result Count -->
+    <div id="result-bar" class="result-bar hidden">
+      <span id="result-count"></span>
+      <span id="active-filters-summary"></span>
+    </div>
+
+    <!-- TAB: OVERVIEW -->
+    <section id="tab-overview" class="tab-content active">
+      <div id="kpi-grid" class="kpi-grid"></div>
+      <div id="overview-charts" class="overview-charts"></div>
+    </section>
+
+    <!-- TAB: DATA TABLE -->
+    <section id="tab-data-table" class="tab-content hidden">
+      <div class="table-toolbar">
+        <div class="col-toggle-wrap">
+          <button id="col-toggle-btn" class="col-toggle-btn"><i class="fas fa-columns"></i> Columns</button>
+          <div id="col-toggle-panel" class="col-toggle-panel hidden"></div>
+        </div>
+        <div class="table-info">
+          <span id="table-count-info"></span>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table id="data-table" class="data-table">
+          <thead id="table-head"></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <div id="pagination" class="pagination"></div>
+    </section>
+
+    <!-- TAB: CHARTS -->
+    <section id="tab-charts" class="tab-content hidden">
+      <div class="chart-builder">
+        <h3><i class="fas fa-sliders"></i> Chart Builder</h3>
+        <div class="chart-builder-controls">
+          <div class="cb-group">
+            <label>Chart Type</label>
+            <select id="cb-type">
+              <option value="bar">Bar Chart</option>
+              <option value="horizontalBar">Horizontal Bar</option>
+              <option value="line">Line Chart</option>
+              <option value="pie">Pie Chart</option>
+              <option value="doughnut">Doughnut</option>
+              <option value="scatter">Scatter Plot</option>
+            </select>
+          </div>
+          <div class="cb-group">
+            <label>X Axis / Category</label>
+            <select id="cb-x"></select>
+          </div>
+          <div class="cb-group">
+            <label>Y Axis / Value</label>
+            <select id="cb-y"></select>
+          </div>
+          <div class="cb-group">
+            <label>Aggregation</label>
+            <select id="cb-agg">
+              <option value="count">Count</option>
+              <option value="sum">Sum</option>
+              <option value="avg">Average</option>
+              <option value="min">Min</option>
+              <option value="max">Max</option>
+            </select>
+          </div>
+          <button id="cb-generate" class="btn-primary"><i class="fas fa-chart-bar"></i> Generate</button>
+        </div>
+      </div>
+      <div id="custom-chart-area" class="chart-area">
+        <div id="custom-chart-wrap" class="chart-canvas-wrap" style="height:450px;">
+          <canvas id="custom-chart"></canvas>
+        </div>
+      </div>
+      <div id="auto-charts-grid" class="auto-charts-grid"></div>
+    </section>
+
+    <!-- TAB: COMPARISON -->
+    <section id="tab-comparison" class="tab-content hidden">
+      <div class="comparison-builder">
+        <h3><i class="fas fa-code-compare"></i> Compare Groups</h3>
+        <div class="comparison-controls">
+          <div class="cb-group">
+            <label>Group By Column</label>
+            <select id="cmp-group"></select>
+          </div>
+          <div class="cb-group">
+            <label>Metric Column</label>
+            <select id="cmp-metric"></select>
+          </div>
+          <div class="cb-group">
+            <label>Aggregation</label>
+            <select id="cmp-agg">
+              <option value="count">Count</option>
+              <option value="sum">Sum</option>
+              <option value="avg">Average</option>
+            </select>
+          </div>
+          <button id="cmp-generate" class="btn-primary"><i class="fas fa-code-compare"></i> Compare</button>
+        </div>
+      </div>
+      <div id="comparison-output" class="comparison-output"></div>
+      <div id="auto-comparison-grid" class="auto-comparison-grid"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/dashboard.js"></script>
+</body>
+</html>
